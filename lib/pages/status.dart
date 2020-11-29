@@ -13,8 +13,18 @@ class StatusPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Server Status ${socketService.serverStatus}'),
+            //Text('Server Status ${socketService.socket.on('sent-mensaje','HEY')}'),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          socketService.emitir('sent-mensaje', {
+            'nombre': 'FLutter',
+            'mensaje': 'Hola Mundo!',
+          });
+        },
+        child: Icon(Icons.message),
       ),
     );
   }

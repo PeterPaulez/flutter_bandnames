@@ -10,7 +10,12 @@ enum ServerStatus {
 
 class SocketService with ChangeNotifier {
   ServerStatus _serverStatus = ServerStatus.Connecting;
-  get serverStatus => this._serverStatus;
+  IO.Socket _socket;
+
+  ServerStatus get serverStatus => this._serverStatus;
+  IO.Socket get socket =>
+      this._socket; // Para escuchar y poder terminar con un OFF
+  Function get emitir => this._socket.emit; // Sino queremos hacer un OFF
 
   SocketService() {
     this._initConfig();
@@ -18,20 +23,28 @@ class SocketService with ChangeNotifier {
 
   void _initConfig() {
     // Dart client
-    IO.Socket socket = IO.io('http://192.168.1.33:3000', <String, dynamic>{
+    this._socket = IO.io('http://192.168.1.33:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true
     });
 
-    socket.on('connect', (_) {
+    this._socket.on('connect', (_) {
       print('Connected');
       this._serverStatus = ServerStatus.Online;
       notifyListeners();
     });
 
-    socket.on('disconnect', (_) {
+    this._socket.on('disconnect', (_) {
       print('Disconnected');
       this._serverStatus = ServerStatus.Offline;
+      notifyListeners();
+    });
+
+    // Mejor no poner tipado al PAYLOAD
+    this._socket.on('nuevo-mensaje', (payload) {
+      String nombre =
+          (payload.containsKey('nombre')) ? payload['nombre'] : 'Sin nombre';
+      print('nuevo-mensaje: $nombre');
       notifyListeners();
     });
   }

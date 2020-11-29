@@ -1,7 +1,10 @@
 import 'dart:io';
-import 'package:band_names/models/band.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:band_names/models/band.dart';
+import 'package:band_names/services/socket.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -17,10 +20,40 @@ class _HomePageState extends State<HomePage> {
   ];
 
   @override
+  void initState() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.on('active-bands', (payload) {
+      //print(payload);
+      // NO tipar payload, sino mapear la info y evitar problemas
+      this.bands =
+          (payload as List).map((band) => BandModel.fromMap(band)).toList();
+      // As LIST es para castear y entonces podemos utilizar el MAP
+      setState(() {});
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.off('active-bands');
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context);
+
     return Scaffold(
       appBar: AppBar(
-        actions: [],
+        actions: [
+          Container(
+            margin: EdgeInsets.only(right: 10),
+            child: (socketService.serverStatus == ServerStatus.Online)
+                ? Icon(Icons.check_circle, color: Colors.green)
+                : Icon(Icons.offline_bolt, color: Colors.red),
+          ),
+        ],
         title: Text(
           'Band Names',
           style: TextStyle(color: Colors.black87),
@@ -46,10 +79,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   _bandListTile(BandModel band) {
+    final socketService = Provider.of<SocketService>(context, listen: false);
     return Dismissible(
       key: Key(band.id),
       onDismissed: (direction) {
         print('\n======\nDirection: $direction\nID:1');
+        socketService.socket.emit('del-band', {'id': band.id});
       },
       direction: DismissDirection.startToEnd,
       background: Container(
@@ -70,7 +105,7 @@ class _HomePageState extends State<HomePage> {
           band.votes.toString(),
           style: TextStyle(fontSize: 20),
         ),
-        onTap: () => print(band.name),
+        onTap: () => socketService.socket.emit('vote-band', {'id': band.id}),
       ),
     );
   }
@@ -106,6 +141,7 @@ class _HomePageState extends State<HomePage> {
             title: Text('New Band name:'),
             content: CupertinoTextField(
               controller: textController,
+              autofocus: true,
             ),
             actions: [
               CupertinoDialogAction(
@@ -126,15 +162,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   void addBandToList(String name) {
+    final socketService = Provider.of<SocketService>(context, listen: false);
     if (name.length > 1) {
       // Agregamos
-      print('Hola $name');
+      print('New $name');
+      socketService.socket.emit('add-band', {'name': name});
+
+      // Forma antigua para actualizar el listado en la app, pero lo haremos con socket
+      /*
       this.bands.add(new BandModel(
             id: DateTime.now().toString(),
             name: name,
             votes: 0,
           ));
       setState(() {});
+      */
     }
     Navigator.pop(context);
   }
