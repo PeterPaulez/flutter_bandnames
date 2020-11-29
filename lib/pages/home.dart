@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:pie_chart/pie_chart.dart';
 import 'package:provider/provider.dart';
 
 import 'package:band_names/models/band.dart';
@@ -63,14 +64,17 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.white,
         elevation: 1,
       ),
-      body: ListView.builder(
-        itemCount: bands.length,
-        itemBuilder: (context, i) => _bandListTile(bands[i]),
-        /*
-        itemBuilder: (BuildContext context, int index) {
-          return _bandListTile(bands[index]);
-        },
-        */
+      body: Column(
+        children: [
+          _showGraph(),
+          // hay que poner un expanded porque el ListView no sabe cuando va a ocupar.
+          Expanded(
+            child: ListView.builder(
+              itemCount: bands.length,
+              itemBuilder: (context, i) => _bandListTile(bands[i]),
+            ),
+          )
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: addNewBand,
@@ -177,5 +181,29 @@ class _HomePageState extends State<HomePage> {
       */
     }
     Navigator.pop(context);
+  }
+
+  Widget _showGraph() {
+    Map<String, double> dataMap = {};
+
+    bands.forEach((band) {
+      dataMap[band.name] = band.votes.toDouble();
+    });
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 10),
+      width: double.infinity,
+      height: 200,
+      child: PieChart(
+        dataMap: dataMap,
+        chartType: ChartType.ring,
+        chartValuesOptions: ChartValuesOptions(
+          showChartValueBackground: false,
+          showChartValues: true,
+          showChartValuesInPercentage: true,
+          showChartValuesOutside: false,
+        ),
+      ),
+    );
   }
 }
