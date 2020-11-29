@@ -22,15 +22,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     final socketService = Provider.of<SocketService>(context, listen: false);
-    socketService.socket.on('active-bands', (payload) {
-      //print(payload);
-      // NO tipar payload, sino mapear la info y evitar problemas
-      this.bands =
-          (payload as List).map((band) => BandModel.fromMap(band)).toList();
-      // As LIST es para castear y entonces podemos utilizar el MAP
-      setState(() {});
-    });
+    socketService.socket.on('active-bands', _handleActiveBands);
     super.initState();
+  }
+
+  _handleActiveBands(dynamic payload) {
+    //print(payload);
+    // NO tipar payload, sino mapear la info y evitar problemas
+    this.bands =
+        (payload as List).map((band) => BandModel.fromMap(band)).toList();
+    // As LIST es para castear y entonces podemos utilizar el MAP
+    setState(() {});
   }
 
   @override
@@ -83,7 +85,7 @@ class _HomePageState extends State<HomePage> {
     return Dismissible(
       key: Key(band.id),
       onDismissed: (direction) {
-        print('\n======\nDirection: $direction\nID:1');
+        print('\n======\nDirection: $direction\nID:${band.id}');
         socketService.socket.emit('del-band', {'id': band.id});
       },
       direction: DismissDirection.startToEnd,
@@ -116,47 +118,43 @@ class _HomePageState extends State<HomePage> {
     if (Platform.isAndroid) {
       showDialog(
         context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('New Band Name'),
-            content: TextField(
-              controller: textController,
-            ),
-            actions: [
-              MaterialButton(
-                child: Text('Add new'),
-                elevation: 5,
-                textColor: Colors.blue,
-                onPressed: () => addBandToList(textController.text),
-              )
-            ],
-          );
-        },
+        builder: (_) => AlertDialog(
+          title: Text('New Band Name'),
+          content: TextField(
+            controller: textController,
+          ),
+          actions: [
+            MaterialButton(
+              child: Text('Add new'),
+              elevation: 5,
+              textColor: Colors.blue,
+              onPressed: () => addBandToList(textController.text),
+            )
+          ],
+        ),
       );
     } else {
       showCupertinoDialog(
         context: context,
-        builder: (_) {
-          return CupertinoAlertDialog(
-            title: Text('New Band name:'),
-            content: CupertinoTextField(
-              controller: textController,
-              autofocus: true,
+        builder: (_) => CupertinoAlertDialog(
+          title: Text('New Band name:'),
+          content: CupertinoTextField(
+            controller: textController,
+            autofocus: true,
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: Text('Add new'),
+              onPressed: () => addBandToList(textController.text),
             ),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: Text('Add new'),
-                onPressed: () => addBandToList(textController.text),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          );
-        },
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: Text('Cancel'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
       );
     }
   }
